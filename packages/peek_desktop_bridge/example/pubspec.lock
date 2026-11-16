@@ -299,14 +299,14 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.1"
   peek_desktop_connect:
     dependency: "direct main"
     description:
       path: "../../peek_desktop_connect"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.1"
   peek_remote:
     dependency: "direct main"
     description:

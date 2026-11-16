@@ -1,6 +1,8 @@
 name: peek_desktop_bridge
-description: Private Talker diagnostics bridge for Peek Desktop, reusing public PeekRemote pairing.
-version: 0.1.0
+description: Talker diagnostics bridge for Peek Desktop, reusing public PeekRemote pairing.
+version: 0.1.1
+repository: https://github.com/lx8s8/peek-flutter-sdk
+issue_tracker: https://github.com/lx8s8/peek-flutter-sdk/issues
 publish_to: none
 environment:
   sdk: ^3.11.0

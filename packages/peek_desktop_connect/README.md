@@ -1,4 +1,4 @@
-# peek_desktop_connect（私有）
+# peek_desktop_connect
 
 为现有 `PeekRemote 2.1.1` 增加历史桌面、Bonjour 发现、手动地址、配对链接和可注入扫码入口。网络和普通日志共用一次连接选择。此包不依赖 Talker 或日志 bridge，也不创建第二个网络客户端。
 

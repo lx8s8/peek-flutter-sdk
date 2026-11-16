@@ -1,6 +1,6 @@
 # Peek Flutter SDK
 
-Peek Desktop 的私有 Flutter SDK，统一维护连接入口和日志同步两个包；主分支为 `main`，通过 Git tag/commit 固定依赖，不发布到 pub.dev。
+Peek Desktop 的 Flutter SDK，统一维护连接入口和日志同步两个包，采用 [MIT 许可证](LICENSE)。主分支为 `main`，通过 Git tag/commit 固定依赖，当前不发布到 pub.dev。
 
 | 包 | 职责 |
 | --- | --- |
@@ -11,19 +11,19 @@ Peek Desktop 的私有 Flutter SDK，统一维护连接入口和日志同步两�
 
 ## App 引用
 
-开发机及 CI 均需具备本私有仓库的 Git 读取权限。两个包固定到同一 tag，`pubspec.lock` 一并提交：
+公开后可通过 HTTPS 引用，无需为 SDK 配置私有仓库凭据。两个包固定到同一 tag，`pubspec.lock` 一并提交：
 
 ```yaml
 dependencies:
   peek_desktop_connect:
     git:
-      url: git@github.com:lx8s8/peek-flutter-sdk.git
-      ref: v0.1.0
+      url: https://github.com/lx8s8/peek-flutter-sdk.git
+      ref: v0.1.1
       path: packages/peek_desktop_connect
   peek_desktop_bridge:
     git:
-      url: git@github.com:lx8s8/peek-flutter-sdk.git
-      ref: v0.1.0
+      url: https://github.com/lx8s8/peek-flutter-sdk.git
+      ref: v0.1.1
       path: packages/peek_desktop_bridge
 ```
 
@@ -40,3 +40,7 @@ dependencies:
 ## 来源与版本
 
 初始代码从 `peek-desktop` 的 `a7a9f03b34f3bbdb1ad3e03b5db0f5c5cfa1f90a` 提取，原提交历史保留在桌面仓库。后续 SDK 改动仅在本仓库维护，桌面通过固定子模块版本参与联合测试。
+
+## 开源边界
+
+本仓库只包含可复用 SDK、协议、合成测试与演示工程。宿主的业务配置、生产诊断开关、业务脱敏规则和用户日志由宿主维护。配对授权仍由桌面执行，源码公开不改变一次性配对和设备授权要求。
