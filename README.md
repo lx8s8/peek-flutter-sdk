@@ -11,7 +11,7 @@ Peek Desktop 的 Flutter SDK，统一维护连接入口和日志同步两个包�
 
 ## App 引用
 
-公开后可通过 HTTPS 引用，无需为 SDK 配置私有仓库凭据。两个包固定到同一 tag，`pubspec.lock` 一并提交：
+可直接通过 HTTPS 引用，无需为 SDK 配置私有仓库凭据。两个包固定到同一 tag，`pubspec.lock` 一并提交：
 
 ```yaml
 dependencies:
@@ -39,7 +39,7 @@ dependencies:
 
 ## 来源与版本
 
-初始代码从 `peek-desktop` 的 `a7a9f03b34f3bbdb1ad3e03b5db0f5c5cfa1f90a` 提取，原提交历史保留在桌面仓库。后续 SDK 改动仅在本仓库维护，桌面通过固定子模块版本参与联合测试。
+初始代码从 `peek-desktop` 的 `2737b01a8138cdd8cf7ffe62502bc359f31a735c` 提取，原提交历史保留在桌面仓库。后续 SDK 改动仅在本仓库维护，桌面通过固定子模块版本参与联合测试。
 
 ## 开源边界
 
