@@ -1,0 +1,19 @@
+name: peek_desktop_bridge
+description: Private Talker diagnostics bridge for Peek Desktop, reusing public PeekRemote pairing.
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.11.0
+  flutter: '>=3.41.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  peek_remote: 2.1.1
+  talker: 5.1.20
+  talker_logger: 5.1.20
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  peek: 2.1.1
+  peek_desktop_connect:
+    path: ../peek_desktop_connect

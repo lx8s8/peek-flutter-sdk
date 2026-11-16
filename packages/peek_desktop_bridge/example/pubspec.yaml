@@ -1,0 +1,24 @@
+name: peek_bridge_example
+description: Local pairing and diagnostic demo for Peek Desktop.
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: ^3.11.0
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  peek: 2.1.1
+  peek_remote: 2.1.1
+  peek_desktop_bridge:
+    path: ../
+  peek_desktop_connect:
+    path: ../../peek_desktop_connect
+  talker: 5.1.20
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
