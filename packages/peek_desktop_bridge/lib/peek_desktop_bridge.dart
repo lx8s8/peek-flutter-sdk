@@ -1,4 +1,4 @@
-/// Private diagnostics channel. No global error hooks or credential persistence.
+/// Talker logs and exception streaming for Peek Desktop.
 library;
 
 export 'src/model.dart';

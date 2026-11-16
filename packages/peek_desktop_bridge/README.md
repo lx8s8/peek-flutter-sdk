@@ -1,61 +1,94 @@
 # peek_desktop_bridge
 
-复用官方 `peek_remote 2.1.1` 的公开配对信息，将 `talker 5.1.20` 普通日志与原始异常堆栈发送到 Peek Desktop 的独立诊断通道。固定 `talker_logger 5.1.20`，依赖锁文件用于联合开发复现。`publish_to: none`，采用 MIT 许可证，通过 Git tag 供宿主 App 引用；当前不发布到 pub.dev。
+把 Talker 日志和原始异常堆栈发送到 Peek Desktop。它复用 App 已有 `PeekRemote` 的配对结果，通过独立 WebSocket 传输诊断事件。
 
 ## 接入
 
-先在 App 自己的编译期诊断开关之后创建 bridge。prod Release/Profile 应直接跳过整个初始化入口，不创建实例、不 attach、不读取凭据、不探测桌面；SDK 的 `enabled: false` 也会跳过启动与订阅，但不能代替调用方的编译期保护。
+按[安装说明](../../README.md#安装)加入依赖，在 App 的诊断构建开关内初始化。这里的 `talker` 和 `remote` 分别是 App 已有的 Talker、PeekRemote 实例：
 
 ```dart
-if (appDiagnosticsEnabled) {
-  // remote 必须是已注册的同一个官方客户端，不能另建一个 PeekRemote。
-  final bridge = DesktopDiagnosticsBridge(redactor: appDiagnosticRedactor);
-  bridge.attachTalker(appTalker);
-  bridge.attachPeekRemote(existingRemote);
-  bridge.start();
-}
+import 'package:peek_desktop_bridge/peek_desktop_bridge.dart';
+
+final bridge = DesktopDiagnosticsBridge(redactor: redactSensitiveFields)
+  ..attachTalker(talker)
+  ..attachPeekRemote(remote)
+  ..start();
 ```
 
-`redactor` 为必传参数，可返回 null 丢弃事件。`redactSensitiveFields` 仅是递归敏感字段清理工具，不保证自由文本、消息和堆栈能自动识别全部隐私，App 仍须提供自己的脱敏规则。转换、清理和裁剪发生在入队前。结构化属性限制深度 8、总遍历节点 512、单容器 64 项；超限字段带截断标记，单事件序列化上限 128 KiB。
+首次在桌面配对时允许“诊断同步”。网络客户端连接成功后，bridge 自动建立日志连接，不需要再次输入配对码。完整初始化见[仓库示例](../../README.md#接入顺序)，可运行工程见 [example](example/README.md)。
 
-默认 Talker converter 跳过已知 HTTP/gRPC 网络日志，避免复制标准网络链路；可传 converter 适配 App 特有结构。宿主隐藏的原始堆栈（例如 `originalStackTrace`）与业务 tag 应由 App 显式提取后传给 `defaultTalkerConverter(data, originalStackTrace: ..., tag: ...)`。SDK 不引用宿主业务类型、不安装全局异常处理器，不覆盖已有 Firebase、FlutterError 或 Zone 处理。
+网络请求继续由 Peek 拦截器采集。默认 converter 跳过 Talker 中已知的 HTTP/gRPC 网络日志，避免重复展示。
 
-重复 start、重复 attach 同一个 Talker/PeekRemote 不重复订阅。先订阅 stream 再读取已有历史，以弱对象身份合并回放与直播；`dispose()` 取消订阅、计时器、探测和连接。bridge 不 dispose 调用方的 PeekRemote。
+## 脱敏与自定义日志
 
-## 连接与边界
+`redactor` 必须提供，返回 `null` 可以丢弃整个事件。`redactSensitiveFields` 是结构化敏感字段的清理工具；自由文本、异常消息和堆栈需按业务补充规则。转换、脱敏和裁剪在进入发送队列前完成，不会修改原有 Talker 记录。
 
-- 官方连接已经 connected 时也会立即检查公开 endpoint/sessionId/deviceToken/serverId；无 deviceToken 的静态 token 连接不尝试私有诊断，不重复索取配对码。
-- 能力不存在、超时或版本/server identity 不匹配时，本轮保持 unsupported，网络连接继续；不循环探测原版 Peek Pro。
-- 诊断与网络使用两条 WebSocket。token 只出现在握手消息，不进入 URL、配置、日志或 callback。SDK 不复制持久化官方 token。
-- 默认队列最多 2,000 条/4 MiB，优先淘汰低级别日志；WARN/ERROR/异常同样有硬上限。每 50 ms 或 64 条发送，单批最多 240 KiB，一个在途批次。只在 ACK 后释放队列；8 秒未确认重连并按 welcome 的累计确认位置恢复。
-- 已不在队列的序号先发送 gap。确认代表桌面内存接纳，不是落盘；已经 ACK 的历史不额外保留，桌面重启丢失内存后会明确报告无法重放的范围。
-- `resetContext()` 清空待发历史并更换 emitter 上下文，阻断旧 ACK 和旧账号日志。切换 server identity 也清理旧目标队列。每 run 最多 16 个 emitter，极长运行中需规划上下文重建。
-- 诊断授权被关闭后保持 denied，不反复弹配对；授权重新开启后调用 `bridge.reconnect()` 或重连标准网络。
-- `onDiagnostic` 仅返回不含凭据的低频错误码，不能重新送回同一个 Talker。
+不通过 Talker 的日志可直接写入：
 
-当前 IO 传输支持 Dart VM 上的 Flutter 平台；Web 不支持。网络内容仍由官方 Peek 拦截器采集，桥接失败不影响业务请求、控制台或本地日志。
+```dart
+bridge.record(
+  const DiagnosticRecord(
+    message: '本地缓存读取完成',
+    source: 'cache',
+    tag: 'startup',
+    attributes: {'items': 12},
+  ),
+);
+```
 
-共享测试机的历史 IP/桌面选择、自动发现与二维码入口由独立 [`peek_desktop_connect`](../peek_desktop_connect/README.md) 提供；把该包的 memory 同时传给现有 `PeekRemote` 和连接面板。bridge 继续复用这一个 remote，切换桌面身份会清理旧目标待发诊断队列；每次发送给当前所选一台，不同时广播。相机扫码通过宿主回调接入，日志包不增加相机权限。
+级别使用 `verbose`、`debug`、`info`、`warning`、`error`、`critical`。需要准确跳转网络请求时，传入该请求的 `relatedNetworkEntryId`；没有 ID 的日志只参与时间线展示。
 
-## 验证与演示
+自定义 Talker 类型可通过 `attachTalker(talker, converter: ...)` 转换为 `DiagnosticRecord`。如果宿主把原始堆栈保存在自定义字段中，取出后传给 `defaultTalkerConverter(data, originalStackTrace: originalStack, tag: tag)`，避免发送 UI 简化后的堆栈。
+
+## 生命周期
+
+| 操作 | 行为 |
+| --- | --- |
+| `start()` | 订阅 Talker，并检查当前网络连接；重复调用不会重复订阅 |
+| `reconnect()` | 重试诊断连接，例如桌面重新允许诊断同步后 |
+| `resetContext()` | 清空待发日志并更换发送上下文，适合退出账号时调用 |
+| `dispose()` | 释放订阅、定时器和诊断连接，需 `await` |
+
+bridge 不销毁传入的 `PeekRemote`。整个诊断服务关闭时，先释放 bridge，再停止和释放 remote。它也不安装全局异常处理器，App 继续使用原有 FlutterError、Zone 或崩溃上报配置。
+
+[连接包](../peek_desktop_connect/README.md)负责历史电脑、发现和扫码入口。两个包共用一个 remote，每次同步到当前所选电脑；切换电脑身份时会清空旧目标的待发诊断队列。
+
+## 状态与排查
+
+| 状态 | 含义及处理 |
+| --- | --- |
+| `waitingForNetwork` | 等待官方网络连接成功，先检查地址和配对结果 |
+| `connecting` | 正在探测或连接诊断通道 |
+| `ready` | 可以发送日志，`stats.queued` 在收到确认后减少 |
+| `unsupported` | 对端没有兼容的诊断能力；标准网络连接仍可使用 |
+| `denied` | 桌面未允许诊断，授权后调用 `reconnect()` |
+| `stopped` | 尚未启动或已经停止 |
+
+`onDiagnostic` 返回不含凭据的低频错误码，用于宿主的独立诊断输出。不要将其写回正在订阅的同一个 Talker，以免形成循环。
+
+## 缓冲与确认
+
+| 项目 | 默认上限或间隔 |
+| --- | --- |
+| 待发队列 | 2,000 条 / 4 MiB，优先淘汰低级别日志 |
+| 发送时机 | 每 50 ms 或累计 64 条 |
+| 单批 | 最多 64 条 / 240 KiB，一个在途批次 |
+| ACK 超时 | 8 秒，之后重连并恢复未确认队列 |
+| 单事件 | 128 KiB |
+| 结构化属性 | 深度 8、总遍历节点 512、每个容器 64 项 |
+
+裁剪后事件带 `truncated` / `truncatedFields`。异常和高等级日志也受容量限制。被队列淘汰的序号通过 gap 告知桌面，重放已确认的序号不会重复展示。
+
+ACK 表示桌面已接纳到内存。SDK 不另存已经确认的历史；桌面丢失内存后，超出 SDK 队列的记录无法重放，会显示缺口。桌面的归档与恢复快照是另外的磁盘保存功能。
+
+协议字段及服务端限制见[诊断协议 v1](../../docs/诊断协议v1.md)。本包使用 Dart IO，暂不支持 Web。生产包应在构造 bridge 前通过编译期开关禁用诊断。
+
+## 开发
 
 ```bash
 flutter pub get
 flutter analyze
 flutter test
-cd example
-flutter pub get
-flutter run -d macos --dart-define=PEEK_DESKTOP_DIAGNOSTICS=true
 ```
 
-示例默认关闭诊断，只在 debug + 显式 dart-define 时初始化。它提供官方 Bonjour 自动发现、地址/配对码输入、合成请求、INFO/WARN/异常、结构化脱敏和上下文重置。macOS 已提供工程；如需移动端示例壳，可在 example 使用 Flutter 工具添加目标平台并验证局域网权限。
-
-诊断线上契约见仓库 [`诊断协议 v1`](../../docs/诊断协议v1.md)。桌面互操作与已验证范围见 [Peek Desktop](https://github.com/lx8s8/peek-desktop)。
-
-跨语言回归从 Peek Desktop 仓库根目录运行（先初始化 `sdk` 子模块并安装 SDK 依赖）：
-
-```bash
-cargo test --locked --manifest-path src-tauri/Cargo.toml --test sdk_interop -- --ignored --nocapture
-```
-
-测试启动临时 Rust 服务并使用内存凭据，驱动真实官方 PeekRemote 与本 SDK 配对、重连、传输日志及大正文。它不读取系统配对库；默认 Rust/Flutter 测试会跳过此项，需显式执行。
+Rust 与真实 Dart 客户端的联合测试见[开发指南](../../CONTRIBUTING.md#与桌面联合测试)。

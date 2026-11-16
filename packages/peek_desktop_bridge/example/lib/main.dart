@@ -171,7 +171,7 @@ class _DemoState extends State<Demo> {
             DesktopConnectionPanel(remote: remote!, memory: connectionMemory!),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('macOS 示例支持粘贴配对链接；手机 App 可通过 onScan 接入现有扫码页。'),
+              child: Text('粘贴电脑生成的配对链接即可连接。手机扫码接入方式见示例文档。'),
             ),
             const SizedBox(height: 16),
             Text('网络：${remote!.state.name} · 日志：${bridge!.state.name}'),
@@ -183,14 +183,14 @@ class _DemoState extends State<Demo> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                FilledButton(onPressed: network, child: const Text('生成合成请求')),
+                FilledButton(onPressed: network, child: const Text('生成测试请求')),
                 OutlinedButton(
                   onPressed: reviewSamples,
-                  child: const Text('P2 分组 / 空堆栈 / 截断'),
+                  child: const Text('异常查看示例'),
                 ),
                 OutlinedButton(
                   onPressed: emitting ? null : () => unawaited(burst()),
-                  child: Text(emitting ? '正在发送合成日志…' : '连续 120 条日志'),
+                  child: Text(emitting ? '正在发送…' : '连续发送 120 条日志'),
                 ),
                 OutlinedButton(
                   onPressed: () => talker.info('普通业务日志 · 合成数据'),
@@ -218,11 +218,11 @@ class _DemoState extends State<Demo> {
                       },
                     ),
                   ),
-                  child: const Text('脱敏属性'),
+                  child: const Text('脱敏示例'),
                 ),
                 OutlinedButton(
                   onPressed: () => bridge!.resetContext(),
-                  child: const Text('重置上下文'),
+                  child: const Text('清空待发日志'),
                 ),
                 OutlinedButton(
                   onPressed: () => bridge!.reconnect(),
@@ -231,7 +231,7 @@ class _DemoState extends State<Demo> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text('此示例只生成合成记录，不访问业务接口。生产应用需使用自身编译期诊断开关，不自动覆盖全局异常处理器。'),
+            const Text('所有按钮均生成测试数据。接入 App 时，请配置诊断构建开关和业务脱敏规则。'),
           ],
         ],
       ),

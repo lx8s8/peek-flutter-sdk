@@ -206,9 +206,7 @@ void main() {
       expect(transport.wires.first.closed, true);
       expect(
         tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Connect / pair'),
-            )
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Connect'))
             .onPressed,
         isNotNull,
         reason: 'reconnect action should finish',
@@ -216,7 +214,7 @@ void main() {
       // A typo/new address without a pairing code must leave the current client untouched.
       final field = find.widgetWithText(
         TextField,
-        'Desktop address (host:port)',
+        'Computer address (host:port)',
       );
       await tester.ensureVisible(field);
       await tester.pumpAndSettle();
@@ -226,16 +224,19 @@ void main() {
         tester.widget<TextField>(field).controller!.text,
         '192.168.1.99:9741',
       );
-      await tester.ensureVisible(find.text('Connect / pair'));
+      await tester.ensureVisible(find.text('Connect'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Connect / pair'));
+      await tester.tap(find.text('Connect'));
       await tester.pumpAndSettle();
       expect(transport.wires.length, 2);
-      expect(find.textContaining('Invalid or expired'), findsOneWidget);
+      expect(
+        find.textContaining('Check the address and four-digit code'),
+        findsOneWidget,
+      );
       // Discovery does not start until requested, and cancellation leaves the shared remote running.
-      await tester.ensureVisible(find.text('Discover LAN desktops'));
+      await tester.ensureVisible(find.text('Find nearby computers'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Discover LAN desktops'));
+      await tester.tap(find.text('Find nearby computers'));
       await tester.pump();
       expect(discovery.watches, 1);
       expect(discovery.stream.hasListener, true);
@@ -294,7 +295,10 @@ void main() {
       await tester.tap(find.text('Scan to pair'));
       await tester.pumpAndSettle();
       expect(transport.wires, isEmpty);
-      expect(find.textContaining('Invalid or expired'), findsOneWidget);
+      expect(
+        find.textContaining('Check the address and four-digit code'),
+        findsOneWidget,
+      );
       expect(find.textContaining('6789'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       remote.dispose();

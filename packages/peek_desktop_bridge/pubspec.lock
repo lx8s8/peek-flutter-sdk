@@ -310,7 +310,7 @@ packages:
       path: "../peek_desktop_connect"
       relative: true
     source: path
-    version: "0.1.1"
+    version: "0.1.2"
   peek_remote:
     dependency: "direct main"
     description:

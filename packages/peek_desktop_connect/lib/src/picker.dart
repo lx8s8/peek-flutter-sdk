@@ -70,7 +70,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
         if (mounted && generation == _generation)
           setState(
             () => _error = _text(
-              '连接已建立，历史记录保存失败。',
+              '已连接，但未能保存电脑记录。',
               'Connected, but history could not be saved.',
             ),
           );
@@ -123,7 +123,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
             if (mounted && revision == _historyRevision)
               setState(
                 () => _error = _text(
-                  '历史记录读取失败，可手动连接。',
+                  '无法读取已配对的电脑，请手动输入地址。',
                   'History unavailable. Enter an address manually.',
                 ),
               );
@@ -153,16 +153,16 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
       if (mounted && generation == _generation)
         setState(
           () => _error = _text(
-            '地址或配对链接无效、已到期，请重新生成。首次连接需输入四位配对码。',
-            'Invalid or expired address/pairing link. Generate a new one. A first connection needs a four-digit code.',
+            '请检查地址和四位配对码。配对链接无效或过期时，请在电脑上重新生成。',
+            'Check the address and four-digit code. If the pairing link is invalid or expired, generate a new one on the computer.',
           ),
         );
     } on Object {
       if (mounted && generation == _generation)
         setState(
           () => _error = _text(
-            '连接操作失败，请检查网络后重试。',
-            'Connection action failed. Check the network and retry.',
+            '操作失败，请检查网络后重试。',
+            'Could not complete the action. Check your connection and try again.',
           ),
         );
     } finally {
@@ -225,7 +225,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
           setState(() {
             _discovering = false;
             _error = _text(
-              '自动发现不可用，可从历史选择或手动输入地址。',
+              '无法搜索局域网电脑，请选择已配对的电脑或手动输入地址。',
               'Discovery unavailable. Use history or enter an address.',
             );
           });
@@ -253,13 +253,13 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _text('桌面连接', 'Desktop connection'),
+          _text('连接电脑', 'Connect to computer'),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         Text(
           _text(
-            '可记住多台电脑，每次连接一台。手机填写电脑的局域网 IP；127.0.0.1 仅适合同机。',
-            'Remember multiple computers and connect to one at a time. On a phone, use the computer’s LAN IP. 127.0.0.1 is for the same computer.',
+            '可保留多台电脑的配对，每次连接一台。手机连接请使用电脑的局域网 IP。',
+            'Pair with multiple computers and connect to one at a time. On a phone, use the computer’s LAN IP.',
           ),
         ),
         const SizedBox(height: 8),
@@ -275,7 +275,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
             _name = null;
           }),
           decoration: InputDecoration(
-            labelText: _text('桌面地址（host:port）', 'Desktop address (host:port)'),
+            labelText: _text('电脑地址（IP:端口）', 'Computer address (host:port)'),
           ),
         ),
         TextField(
@@ -285,8 +285,8 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             labelText: _text(
-              '一次性配对码（已配对可留空）',
-              'One-time code (optional when paired)',
+              '配对码（已配对可留空）',
+              'Pairing code (leave empty if paired)',
             ),
           ),
         ),
@@ -296,7 +296,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
           children: [
             FilledButton(
               onPressed: _busy ? null : () => unawaited(_act(_connect)),
-              child: Text(_text('连接 / 配对', 'Connect / pair')),
+              child: Text(_text('连接', 'Connect')),
             ),
             OutlinedButton(
               onPressed: _busy ? null : () => unawaited(_act(remote.stop)),
@@ -326,22 +326,24 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
           autocorrect: false,
           maxLines: 2,
           decoration: InputDecoration(
-            labelText: _text('粘贴桌面配对链接', 'Paste desktop pairing link'),
+            labelText: _text('粘贴电脑配对链接', 'Paste pairing link'),
           ),
         ),
         TextButton(
           onPressed: _busy
               ? null
               : () => unawaited(_act(() => _pair(_link.text))),
-          child: Text(_text('使用链接绑定', 'Pair using link')),
+          child: Text(_text('通过链接配对', 'Pair with link')),
         ),
         const SizedBox(height: 8),
         Text(
-          _text('历史桌面', 'Desktop history'),
+          _text('已配对的电脑', 'Paired computers'),
           style: Theme.of(context).textTheme.titleSmall,
         ),
         if (_history.isEmpty)
-          Text(_text('成功配对后保存在这里。', 'Paired desktops appear here.')),
+          Text(
+            _text('配对成功后，电脑会显示在这里。', 'Computers appear here after pairing.'),
+          ),
         for (final desktop in _history)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -365,7 +367,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
                     unawaited(_act(_connect));
                   },
             trailing: IconButton(
-              tooltip: _text('忘记这台桌面', 'Forget this desktop'),
+              tooltip: _text('忘记这台电脑', 'Forget this computer'),
               icon: const Icon(Icons.delete_outline),
               onPressed: _busy
                   ? null
@@ -390,7 +392,7 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
           children: [
             OutlinedButton(
               onPressed: _busy ? null : _discover,
-              child: Text(_text('发现局域网桌面', 'Discover LAN desktops')),
+              child: Text(_text('搜索局域网电脑', 'Find nearby computers')),
             ),
             if (_discovering)
               TextButton(
@@ -403,15 +405,15 @@ class _DesktopConnectionPanelState extends State<DesktopConnectionPanel> {
                     _found = [];
                   });
                 },
-                child: Text(_text('停止发现', 'Stop discovery')),
+                child: Text(_text('停止搜索', 'Stop searching')),
               ),
           ],
         ),
         if (_discovering && _found.isEmpty)
           Text(
             _text(
-              '正在发现；无结果时可手动输入 IP。',
-              'Discovering. Enter an IP manually if no results appear.',
+              '正在查找电脑，也可手动输入 IP。',
+              'Looking for computers. You can also enter an IP address.',
             ),
           ),
         for (final desktop in _found)
